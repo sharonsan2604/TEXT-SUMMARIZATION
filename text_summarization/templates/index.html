@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Summarization</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.20.0/cytoscape.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Summarization</h1>
+        <form method="post" action="/summarize">
+            <textarea name="text" placeholder="Enter text to summarize...">{{ original_text }}</textarea><br>
+            <button type="submit">Summarize</button>
+        </form>
+        {% if summary %}
+        <h2>Summary:</h2>
+        <p>{{ summary }}</p>
+        <h2>Similarity Graph:</h2>
+        <div id="cy"></div>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                var sentences = {{ sentences | safe }};
+                var similarityMatrix = {{ similarity_matrix | safe }};
+
+                var elements = [];
+                for (var i = 0; i < sentences.length; i++) {
+                    elements.push({ data: { id: 's' + i, label: sentences[i].join(' ') } });
+                }
+                for (var i = 0; i < similarityMatrix.length; i++) {
+                    for (var j = 0; j < similarityMatrix[i].length; j++) {
+                        if (i != j && similarityMatrix[i][j] > 0) {
+                            elements.push({ data: { source: 's' + i, target: 's' + j, weight: similarityMatrix[i][j] } });
+                        }
+                    }
+                }
+
+                var cy = cytoscape({
+                    container: document.getElementById('cy'),
+                    elements: elements,
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'shape': 'rectangle',
+                                'label': 'data(label)',
+                                'text-wrap': 'wrap',
+                                'text-max-width': '200px',
+                                'background-color': '#0074D9',
+                                'color': '#fff',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'width': 'label',
+                                'height': 'label',
+                                'padding': '10px'
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'width': 2,
+                                'line-color': '#ccc',
+                                'target-arrow-color': '#ccc',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'straight'
+                            }
+                        }
+                    ],
+                    layout: {
+                        name: 'grid',
+                        rows: sentences.length,
+                        cols: 1,
+                        directed: true,
+                        padding: 10,
+                        spacingFactor: 1.5
+                    }
+                });
+            });
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
